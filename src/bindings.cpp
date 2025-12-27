@@ -154,6 +154,7 @@ public:
 
     int consumer_wait_for_ready()
     {
+        pybind11::gil_scoped_release release;
         return shmio::consumer_wait_for_ready(shmio::get_storage_ptr(memory));
     }
 
@@ -164,6 +165,7 @@ public:
 
     int producer_wait_for_request()
     {
+        pybind11::gil_scoped_release release;
         return shmio::producer_wait_for_request(shmio::get_storage_ptr(memory));
     }
 

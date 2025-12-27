@@ -49,7 +49,7 @@ class TestPyshmioPushPull(unittest.TestCase):
             time.sleep(0.01)
 
     def test_SharedMemory_push_pull_data_to_from_storage(self):
-        # source must be running shmio_examples/source_compute_sink/src/source/source 
+        # source must be running shmio_examples/source_compute_sink/src/source/source
         # sink must be running shmio_examples/source_compute_sink/src/sink/sink
         source_shm = SharedMemory("source_share")
         logger.info("source_shm.creation_time             : %s", source_shm.creation_time)

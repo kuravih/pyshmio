@@ -1,18 +1,25 @@
+[project]
+name = "pyshmio"
+version = "0.1.0"
+description = "Python bindings for shmio shared memory streams"
+readme = "README.md"
+authors = [
+  { name="Kuravi H", email="kuravih@gmail.com" },
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.4.0",
+]
+
 [build-system]
 requires = ["setuptools>=64", "wheel", "pybind11>=2.12.0"]
 build-backend = "setuptools.build_meta"
 
-[project]
-name = "pyshmio"
-version = "0.0.1"
-description = "Python bindings for shmio shared memory streams"
-authors = [
-  { name="Kuravi H", email="kuravih@gmail.com" },
-]
-readme = "README.md"
-license = { text = "MIT" }
-requires-python = ">=3.8"
-dependencies = ["numpy"]
-
 [project.urls]
 Homepage = "https://github.com/kuravih/pyshmio"
+Issues = "https://github.com/kuravih/pyshmio/issues"
+
+[dependency-groups]
+dev = [
+    "pykato @ git+https://github.com/kuravih/pykato.git"
+]

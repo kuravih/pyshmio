@@ -23,3 +23,6 @@ Issues = "https://github.com/kuravih/pyshmio/issues"
 dev = [
     "pykato @ git+https://github.com/kuravih/pykato.git"
 ]
+
+[tool.setuptools]
+include-package-data = true

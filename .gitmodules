@@ -1,0 +1,3 @@
+[submodule "src/lib/shmio"]
+	path = src/lib/shmio
+	url = git@github.com:kuravih/shmio.git

@@ -144,23 +144,29 @@ public:
 
     int consumer_request_start()
     {
+        // set request flag to true
         return shmio::consumer_request_start(shmio::get_storage_ptr(memory));
     }
 
     int consumer_wait_for_ready()
     {
+        // wait for ready_flag to become true
+        // set ready flag to false
         pybind11::gil_scoped_release release;
         return shmio::consumer_wait_for_ready(shmio::get_storage_ptr(memory));
     }
 
     int producer_wait_for_request()
     {
+        // wait for request flag to become true
         pybind11::gil_scoped_release release;
         return shmio::producer_wait_for_request(shmio::get_storage_ptr(memory));
     }
 
     int producer_request_done()
     {
+        // set request flag to false
+        // set ready flag to true
         return shmio::producer_request_done(shmio::get_storage_ptr(memory));
     }
 

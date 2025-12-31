@@ -142,11 +142,6 @@ public:
         }
     }
 
-    int push_data_to_storage()
-    {
-        return shmio::push_data_to_storage(shmio::get_storage_ptr(memory));
-    }
-
     int consumer_request_start()
     {
         return shmio::consumer_request_start(shmio::get_storage_ptr(memory));
@@ -156,11 +151,6 @@ public:
     {
         pybind11::gil_scoped_release release;
         return shmio::consumer_wait_for_ready(shmio::get_storage_ptr(memory));
-    }
-
-    int pull_data_from_storage()
-    {
-        return shmio::pull_data_from_storage(shmio::get_storage_ptr(memory));
     }
 
     int producer_wait_for_request()
@@ -283,10 +273,8 @@ PYBIND11_MODULE(pyshmio, m)
         .def_property_readonly("keywords", &PySharedMemory::keywords_dict)
         .def("lock", &PySharedMemory::lock)
         .def("unlock", &PySharedMemory::unlock)
-        .def("pull_data_from_storage", &PySharedMemory::pull_data_from_storage)
         .def("consumer_request_start", &PySharedMemory::consumer_request_start)
         .def("consumer_wait_for_ready", &PySharedMemory::consumer_wait_for_ready)
-        .def("push_data_to_storage", &PySharedMemory::push_data_to_storage)
         .def("producer_wait_for_request", &PySharedMemory::producer_wait_for_request)
         .def("producer_request_done", &PySharedMemory::producer_request_done)
         .def_property_readonly("ndarray", &PySharedMemory::ndarray);

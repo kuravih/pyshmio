@@ -142,32 +142,32 @@ public:
         }
     }
 
-    int consumer_request_start()
+    int post_request()
     {
         // set request flag to true
-        return shmio::consumer_request_start(shmio::get_storage_ptr(memory));
+        return shmio::post_request(shmio::get_storage_ptr(memory));
     }
 
-    int consumer_wait_for_ready()
+    int wait_for_response()
     {
-        // wait for ready_flag to become true
+        // wait for has_response to become true
         // set ready flag to false
         pybind11::gil_scoped_release release;
-        return shmio::consumer_wait_for_ready(shmio::get_storage_ptr(memory));
+        return shmio::wait_for_response(shmio::get_storage_ptr(memory));
     }
 
-    int producer_wait_for_request()
+    int wait_for_request()
     {
         // wait for request flag to become true
         pybind11::gil_scoped_release release;
-        return shmio::producer_wait_for_request(shmio::get_storage_ptr(memory));
+        return shmio::wait_for_request(shmio::get_storage_ptr(memory));
     }
 
-    int producer_request_done()
+    int post_response()
     {
         // set request flag to false
         // set ready flag to true
-        return shmio::producer_request_done(shmio::get_storage_ptr(memory));
+        return shmio::post_response(shmio::get_storage_ptr(memory));
     }
 
     py::array ndarray()
@@ -225,8 +225,13 @@ public:
             throw std::runtime_error("Unsupported dtype");
         }
         py::object base = py::cast(this);
-        py::array arr(py::buffer_info(shmio::get_pixels_ptr(memory), elsize, fmt, 1, {npx}, {elsize}), base);
-        arr.mutable_data();
+        py::buffer_info info(shmio::get_pixels_ptr(memory), elsize, fmt, 1, {npx}, {elsize});
+
+        // Explicitly mark writable
+        info.readonly = false;
+
+        py::array arr(info, base);
+
         return arr;
     }
 
@@ -279,9 +284,9 @@ PYBIND11_MODULE(pyshmio, m)
         .def_property_readonly("keywords", &PySharedMemory::keywords_dict)
         .def("lock", &PySharedMemory::lock)
         .def("unlock", &PySharedMemory::unlock)
-        .def("consumer_request_start", &PySharedMemory::consumer_request_start)
-        .def("consumer_wait_for_ready", &PySharedMemory::consumer_wait_for_ready)
-        .def("producer_wait_for_request", &PySharedMemory::producer_wait_for_request)
-        .def("producer_request_done", &PySharedMemory::producer_request_done)
+        .def("post_request", &PySharedMemory::post_request)
+        .def("wait_for_response", &PySharedMemory::wait_for_response)
+        .def("wait_for_request", &PySharedMemory::wait_for_request)
+        .def("post_response", &PySharedMemory::post_response)
         .def_property_readonly("ndarray", &PySharedMemory::ndarray);
 }

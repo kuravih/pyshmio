@@ -62,6 +62,21 @@ inline void keyword_set_value(shmio::Keyword &_keyword, const py::object &_value
     }
 }
 
+class PyKeywordProxy
+{
+    shmio::Keyword *kw;
+    py::object parent; // keeps PySharedMemory alive
+
+public:
+    PyKeywordProxy(shmio::Keyword *kw, py::object parent) : kw(kw), parent(std::move(parent)) {}
+
+    py::object get_name() const { return py::cast(std::string(kw->name)); }
+    py::object get_comment() const { return py::cast(std::string(kw->comment)); }
+    shmio::KeywordType get_type() const { return kw->type; }
+    py::object get_value() const { return keyword_get_value(*kw); }
+    void set_value(const py::object &val) { keyword_set_value(*kw, val); }
+};
+
 class PySharedMemory
 {
 private:
@@ -87,7 +102,7 @@ public:
     static PySharedMemory create(const std::string &_name, const size_t _npx, const shmio::DataType _dtype, const std::vector<shmio::Keyword> &_keywords = {})
     {
         PySharedMemory wrapper;
-        if (shmio::create_shared_memory(wrapper.memory, _name.c_str(), _npx, _dtype, _keywords) != 0)
+        if (shmio::create_open_shared_memory(wrapper.memory, _name.c_str(), _npx, _dtype, _keywords) != 0)
         {
             throw std::runtime_error("Failed to create shared memory: " + _name);
         }
@@ -232,12 +247,52 @@ public:
 
         py::array arr(info, base);
 
+        shmio::update_last_access_time(storage);
+
         return arr;
     }
+
+    shmio::SharedMemory &get_memory() { return memory; }
 
     ~PySharedMemory()
     {
         shmio::close_shared_memory(memory);
+    }
+};
+
+class PyKeywordsAccessor
+{
+    shmio::SharedMemory &memory;
+    py::object parent;
+
+public:
+    PyKeywordsAccessor(shmio::SharedMemory &memory, py::object parent)
+        : memory(memory), parent(std::move(parent)) {}
+
+    PyKeywordProxy getitem(const std::string &name)
+    {
+        shmio::Keyword *kw = shmio::find_keyword(memory, name.c_str());
+        if (kw == nullptr)
+            throw py::key_error(name);
+        return PyKeywordProxy(kw, parent);
+    }
+
+    size_t len()
+    {
+        return shmio::get_storage_ptr(memory)->nkw;
+    }
+
+    py::object iter()
+    {
+        py::list keys;
+        for (const shmio::Keyword &kw : shmio::get_keywords(memory))
+            keys.append(std::string(kw.name));
+        return py::iter(keys);
+    }
+
+    bool contains(const std::string &name)
+    {
+        return shmio::find_keyword(memory, name.c_str()) != nullptr;
     }
 };
 
@@ -263,6 +318,18 @@ PYBIND11_MODULE(pyshmio, m)
         .value("DOUBLE", shmio::KeywordType::DOUBLE)
         .value("STRING", shmio::KeywordType::STRING);
 
+    py::class_<PyKeywordProxy>(m, "KeywordProxy")
+        .def_property_readonly("name", &PyKeywordProxy::get_name)
+        .def_property_readonly("comment", &PyKeywordProxy::get_comment)
+        .def_property_readonly("type", &PyKeywordProxy::get_type)
+        .def_property("value", &PyKeywordProxy::get_value, &PyKeywordProxy::set_value);
+
+    py::class_<PyKeywordsAccessor>(m, "KeywordsAccessor")
+        .def("__getitem__", &PyKeywordsAccessor::getitem)
+        .def("__len__", &PyKeywordsAccessor::len)
+        .def("__iter__", &PyKeywordsAccessor::iter)
+        .def("__contains__", &PyKeywordsAccessor::contains);
+
     py::class_<shmio::Keyword>(m, "Keyword")
         // constructors
         .def(py::init<const char *, shmio::KeywordType, int64_t, const char *>(), py::arg("name"), py::arg("type"), py::arg("value"), py::arg("comment"))
@@ -281,7 +348,9 @@ PYBIND11_MODULE(pyshmio, m)
         .def_property_readonly("last_access_time", &PySharedMemory::get_last_access_time)
         .def_property_readonly("size", &PySharedMemory::get_size)
         .def_property_readonly("name", &PySharedMemory::get_name)
-        .def_property_readonly("keywords", &PySharedMemory::keywords_dict)
+        .def_property_readonly("keywords", [](py::object self) {
+            return PyKeywordsAccessor(self.cast<PySharedMemory &>().get_memory(), self);
+        })
         .def("lock", &PySharedMemory::lock)
         .def("unlock", &PySharedMemory::unlock)
         .def("post_request", &PySharedMemory::post_request)

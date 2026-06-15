@@ -33,7 +33,7 @@ class TestPyshmioOpen(unittest.TestCase):
         elif keyword.type == KeywordType.DOUBLE:
             new_value = original_value + 1.0
         else:
-            new_value = original_value + "_test"
+            new_value = original_value
         shm.keywords[key].value = new_value
         assert shm.keywords[key].value == new_value, f"expected {new_value}, got {shm.keywords[key].value}"
         logger.info("keyword write: %s %s -> %s", key, original_value, new_value)
